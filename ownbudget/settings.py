@@ -36,7 +36,9 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'bootstrapform',
     'rest_framework',
+    'budget',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -81,5 +83,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+AUTH_PROFILE_MODULE = 'budget.models.UserProfile'
 
 ENCRYPTED_FIELDS_KEYDIR = '/path/to/fieldkeys'
