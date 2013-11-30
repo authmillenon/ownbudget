@@ -1,0 +1,191 @@
+[
+{
+    "model": "budget.CategoryGroup",
+    "pk": 1,
+    "fields": {
+        "name": "Income",
+        "default": true,
+        "budgeted": false
+    }
+},
+{
+    "model": "budget.CategoryGroup",
+    "pk": 2,
+    "fields": {
+        "name": "Monthly Bills",
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.CategoryGroup",
+    "pk": 3,
+    "fields": {
+        "name": "Everyday Expenses",
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.CategoryGroup",
+    "pk": 4,
+    "fields": {
+        "name": "Gifts",
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.CategoryGroup",
+    "pk": 5,
+    "fields": {
+        "name": "Insurences",
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.CategoryGroup",
+    "pk": 6,
+    "fields": {
+        "name": "Saving Goals",
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Rent",
+        "group": 2,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Phone",
+        "group": 2,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Internet",
+        "group": 2,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Electricity",
+        "group": 2,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Groceries",
+        "group": 3,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Restaurants",
+        "group": 3,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Medical",
+        "group": 3,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Clothing",
+        "group": 3,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Household Goods",
+        "group": 3,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Entertainment",
+        "group": 3,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Christmas",
+        "group": 4,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Birthday",
+        "group": 4,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Vacation",
+        "group": 4,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Liability Insurance",
+        "group": 5,
+        "default": true,
+        "budgeted": true
+    }
+},
+{
+    "model": "budget.Category",
+    "fields": {
+        "name": "Health Insurance",
+        "group": 5,
+        "default": true,
+        "budgeted": true
+    }
+}
+]
