@@ -1,0 +1,7 @@
+{% load bootstrap %}
+<form class="form" role="form" method="post" action="{% url "budget.views.add_account" %}">
+{% csrf_token %}
+<h2 class="form-signin-heading">Create account</h2>
+{{ form|bootstrap }}
+<input class="btn btn-lg btn-primary btn-block" type="submit" value="Create account">
+</form>

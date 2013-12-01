@@ -1,0 +1,16 @@
+{% extends "budget/page.html" %}
+{% block content %}
+<table class="table table-striped table-responsive small">
+    {% include "budget/transactions.html" %}
+    <tfoot>
+        <tr>
+            <td style="padding: 2px" colspan="{% if account %}9{% else %}10{% endif %}">
+            <div class="btn-group">
+                <a href="{% if account %}{% url "budget.views.add_transaction" account_id=account.id %}{% else %}{% url "budget.views.add_transaction" %}{% endif %}" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span> Add transaction</a>
+                <a href="{% if account %}{% url "budget.views.add_transfer" account_id=account.id %}{% else %}{% url "budget.views.add_transfer" %}{% endif %}" class="btn btn-default"><span class="glyphicon glyphicon-transfer"></span> Add transfer</a>
+            </div>
+            </td>
+        </tr>
+    </tfoot>
+</table>
+{% endblock %}

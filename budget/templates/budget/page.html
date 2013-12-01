@@ -1,0 +1,84 @@
+{% extends "budget/base.html" %}
+{% block body %}
+<nav class="navbar navbar-default" role="navigation">
+  <!-- Brand and toggle get grouped for better mobile display -->
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="#">Ownbudget</a>
+  </div>
+
+  <!-- Collect the nav links, forms, and other content for toggling -->
+  <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+    <ul class="nav navbar-nav navbar-right">
+        {% if user.is_staff %}<li><a href="/admin/">Administrate ownbudget</a></li>{% endif %}
+        <li><a href="#">Settings <span class="glyphicon glyphicon-cog"></span></a></li>
+        <li><a href="{% url "django.contrib.auth.views.logout" %}">Logout <span class="glyphicon glyphicon-log-out"></span></a></li>
+    </ul>
+  </div><!-- /.navbar-collapse -->
+</nav>
+<div class="container">
+    <div class="col-xs-12 col-sm-3">
+        <ul class="nav nav-pills nav-stacked">
+            {% if year and month %}
+            <li><a href="{% url "budget.views.budget" year=year month=month %}">
+            {% else %}
+            <li><a href="{% url "index" %}">
+            {% endif %}<strong>Budget</strong></a></li>
+            <li>
+                <a href="{% url "budget.views.accounts" %}">
+                    {% with sum=user.budget_profile.total_accounts_sum %}
+                    <span class="label label-{% if sum < 0 %}danger{% else %}{% if sum == 0 %}default{% else %}success{% endif %}{% endif %} pull-right">{{ sum|default_if_none:""|stringformat:"0.2f" }}</span>
+                    {% endwith %}
+                    <strong>Accounts</strong>
+                </a>
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        {% with sum=user.budget_profile.budget_accounts_sum %}
+                        <span class="label label-{% if sum < 0 %}danger{% else %}{% if sum == 0 %}default{% else %}success{% endif %}{% endif %} pull-right">{{ sum|default_if_none:""|stringformat:"0.2f" }}</span>
+                        {% endwith %}
+                        <strong>Budget-Accounts</strong>
+                        <ul class="list-unstyled">
+                            {% for account in user.budget_profile.budget_accounts %}
+                            <li>
+                                <span class="label label-{% if account.saldo < 0 %}danger{% else %}{% if account.saldo == 0 %}default{% else %}success{% endif %}{% endif %} pull-right">{{ account.saldo|stringformat:"0.2f" }}</span>
+                                <a href="{% url "budget.views.account" id=account.id %}">{{ account.name }}</a>
+                                <span class="pull-right" style="margin-right: 4px;"><a class="text-danger" href="{% url "budget.views.delete_account" id=account.id %}?next={{ request.get_full_path }}"><span class="glyphicon glyphicon-trash"></span></a></span>
+                            </li>
+                            {% empty %}
+                            <li>No Budget-Accounts set up</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% if user.budget_profile.off_budget_accounts %}
+                    <li class="list-group-item">
+                        {% with sum=user.budget_profile.off_budget_accounts_sum %}
+                        <span class="label label-{% if sum < 0 %}danger{% else %}{% if sum == 0 %}default{% else %}success{% endif %}{% endif %} pull-right">{{ sum|default_if_none:""|stringformat:"0.2f" }}</span>
+                        {% endwith %}
+                        <strong>Off-Budget-Accounts</strong>
+                        <ul class="list-unstyled">
+                            {% for account in user.budget_profile.off_budget_accounts %}
+                            <li>
+                                <span class="label label-{% if account.saldo < 0 %}danger{% else %}{% if account.saldo == 0 %}default{% else %}success{% endif %}{% endif %} pull-right">{{ account.saldo|stringformat:"0.2f" }}</span>
+                                <a href="{% url "budget.views.account" id=account.id %}">{{ account.name }}</a>
+                                <span class="pull-right" style="margin-right: 4px;"><a class="text-danger" href="{% url "budget.views.delete_account" id=account.id %}?next={{ request.get_full_path }}"><span class="glyphicon glyphicon-trash"></span></a></span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+            </li>
+            <li><a href="{% url "budget.views.add_account" %}"><strong>Add account <span class="glyphicon glyphicon-plus-sign"></span></strong></a></li>
+        </ul>
+    </div>
+    <div class="col-xs-12 col-sm-9">
+{% block content %}
+{% endblock %}
+    </div>
+</div>
+{% endblock %}

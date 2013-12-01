@@ -1,0 +1,60 @@
+{% load budget_extras %}
+<div class="row text-center">
+    <div class="hidden-xs">
+        <h3>{{ year }}</h3>
+        <ul class="pagination" style="margin-top: 0px">
+            <li id="month-nav-{{ year }}-prev-year">
+                <a href="{% url "budget.views.budget" year=year|sub:"1" month=12 %}">&laquo;</a></li>
+            </li>
+            <li{% if month <= 1 %} class="active"{% endif %} id="month-nav-{{ year }}-1">
+                <a href="{% url "budget.views.budget" year=year month=1 %}">Jan</a>
+            </li>
+            <li{% if month <= 2 %} class="active"{% endif %} id="month-nav-{{ year }}-2">
+                <a href="{% url "budget.views.budget" year=year month=2 %}">Feb</a>
+            </li>
+            <li{% if month <= 3 %} class="active"{% endif %} id="month-nav-{{ year }}-3">
+                <a href="{% url "budget.views.budget" year=year month=3 %}">Mar</a>
+            </li>
+            <li{% if month > 1 and month <=  4 %} class="active"{% endif %} id="month-nav-{{ year }}-4">
+                <a href="{% url "budget.views.budget" year=year month=4 %}">Apr</a>
+            </li>
+            <li{% if month > 2 and month <=  5 %} class="active"{% endif %} id="month-nav-{{ year }}-5">
+                <a href="{% url "budget.views.budget" year=year month=5 %}">May</a>
+            </li>
+            <li{% if month > 3 and month <=  6 %} class="active"{% endif %} id="month-nav-{{ year }}-6">
+                <a href="{% url "budget.views.budget" year=year month=6 %}">Jun</a>
+            </li>
+            <li{% if month > 4 and month <=  7 %} class="active"{% endif %} id="month-nav-{{ year }}-7">
+                <a href="{% url "budget.views.budget" year=year month=7 %}">Jul</a>
+            </li>
+            <li{% if month > 5 and month <=  8 %} class="active"{% endif %} id="month-nav-{{ year }}-8">
+                <a href="{% url "budget.views.budget" year=year month=8 %}">Aug</a>
+            </li>
+            <li{% if month > 6 and month <=  9 %} class="active"{% endif %} id="month-nav-{{ year }}-9">
+                <a href="{% url "budget.views.budget" year=year month=9 %}">Sep</a>
+            </li>
+            <li{% if month > 7 and month <= 10 %} class="active"{% endif %} id="month-nav-{{ year }}-10">
+                <a href="{% url "budget.views.budget" year=year month=10 %}">Oct</a>
+            </li>
+            <li{% if month > 8 and month <= 11 %} class="active"{% endif %} id="month-nav-{{ year }}-11">
+                <a href="{% url "budget.views.budget" year=year month=11 %}">Nov</a>
+            </li>
+            <li{% if month > 9 and month <= 12 %} class="active"{% endif %} id="month-nav-{{ year }}-12">
+                <a href="{% url "budget.views.budget" year=year month=12 %}">Dec</a>
+            </li>
+            <li{% if month > 10 and month <= 12 %} class="active"{% endif %} id="month-nav-{{ year }}-next-year">
+                <a href="{% url "budget.views.budget" year=year|add:"1" month=1 %}">&raquo;</a>
+            </li>
+        </ul>
+    </div>
+    <div class="visible-xs">
+        <ul class="pager">
+            {% with prev=budget.0.month|month_sub:"1" %}
+            <li class="previous"><a href="{% url "budget.views.budget" year=prev.year month=prev.month %}">&larr; {{ prev|date:"F Y" }}</a></li>
+            {% endwith %}
+            {% with next=budget.0.month|month_add:"1" %}
+            <li class="next"><a href="{% url "budget.views.budget" year=next.year month=next.month %}">{{ next|date:"F Y" }} &rarr;</a></li>
+            {% endwith %}
+        </ul>
+    </div>
+</div>

@@ -1,0 +1,83 @@
+{% extends "budget/page.html" %}
+{% load budget_extras %}
+{% block content %}
+{% include "budget/month-nav.html" %}
+<div class="row">
+    {% for month_budget in budget %}
+    <div class="{%if not forloop.first %}hidden-xs {% endif %}col-sm-3{% if forloop.first %} col-sm-offset-3{% endif %}">
+        <div class="panel {% if month_budget.month.month == today.month and month_budget.month.year and today.year %}panel-info{% else %}panel-default{% endif %}">
+            <div class="panel-heading text-center">{{ month_budget }}</div>
+            <table class="table small">
+                {% with prev_month=month_budget.month.month|month_sub:"1" %}
+                <tr>
+                    <th class="text-right" style="padding: 2px">0,00</th>
+                    <td style="padding: 2px">Not Budgeted in {% month_abbr prev_month %}</td>
+                </tr>
+                <tr>
+                    <th class="text-right" style="padding: 2px">0,00</th>
+                    <td style="padding: 2px">Overspend in {% month_abbr prev_month %}</td>
+                </tr>
+                <tr>
+                    <th class="text-right" style="padding: 2px">0,00</th>
+                    <td style="padding: 2px">Income in {% month_abbr month_budget.month %}</td>
+                </tr>
+                <tr>
+                    <th class="text-right" style="padding: 2px">0,00</th>
+                    <td style="padding: 2px">Budgeted in {% month_abbr month_budget.month %}</td>
+                </tr>
+                {% endwith %}
+            </table>
+            <div class="panel-footer text-center">
+                <h3 class="bold" style="margin: 3px">= 0,00€</h3>
+                <strong>Available to Budget</strong>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<div class="row small">
+    <div class="hidden-xs col-sm-3">
+        <div class="panel panel-default">
+            <table class="table table-stripped table-bordered table-responsive">
+                <tr>
+                    <th style="padding: 2px">
+                        <br>
+                        Categories <a href="#"><span class="glyphicon glyphicon-plus-sign"></span></a>
+                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-up"></a>
+                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-down"></a>
+                    </th>
+                </tr>
+                <tr><td style="padding: 2px">Category 1</td></tr>
+                <tr><td style="padding: 2px">Category 2</td></tr>
+            </table>
+        </div>
+    </div>
+    {% for month_budget in budget %}
+    <div class="{%if not forloop.first %}hidden-xs {% endif %}col-sm-3">
+        <div class="panel {% if month_budget.month.month == today.month and month_budget.month.year and today.year %}panel-info{% else %}panel-default{% endif %}">
+            <table class="table table-stripped table-bordered table-responsive">
+                {% with prev_month=month_budget.month.month|month_sub:"1" %}
+                <tr>
+                    <th class="visible-xs" style="padding: 2px">
+                        <br>
+                        Categories <a href="#"><span class="glyphicon glyphicon-plus-sign"></span></a>
+                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-up"></a>
+                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-down"></a>
+                    </th>
+                    <th class="text-right" style="padding: 2px">Budgeted<br>0,00€</th>
+                    <th class="text-right" style="padding: 2px">Outflows<br>0,00€</th>
+                    <th class="text-right" style="padding: 2px">Balance<br>0,00€</th>
+                </tr>
+                <tr>
+                    <td class="visible-xs" style="padding: 2px">Catgories</th>
+                    <td class="text-right" style="padding: 2px">0,00</td>
+                    <td class="text-right" style="padding: 2px">0,00</td>
+                    <td class="text-right" style="padding: 2px">0,00</td>
+                </tr>
+                {% endwith %}
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "budget/base.html" %}
+
+{% load bootstrap %}
+
+{% block pagetitle %}Login{% endblock %}
+
+{% block body %}
+<div class=container">
+<form class="form-signin" method="post" action="{% url "django.contrib.auth.views.login" %}">
+{% csrf_token %}
+<div class="col-xs-12 col-sm-6 col-md-4 col-sm-offset-3 col-md-offset-4">
+    <h2 class="form-signin-heading">Please sign in</h2>
+    {{ form|bootstrap }}
+    <input class="btn btn-lg btn-primary btn-block" type="submit" value="Sign in">
+    {% if next %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% endif %}
+    <p class="text-right">
+        <a href={% url "budget.views.register" %}>or Register</a>
+    </p>
+</div>
+</form>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% load bootstrap %}
+<tfoot>
+    <tr class="warning">
+        <td style="padding: 2px"></td>
+        {% if not account %}<td style="padding: 2px">{{ form.account|bootstrap_inline }}</td>{% endif %}
+        <td style="padding: 2px">{{ form.date|bootstrap_inline }}</td>
+        <td style="padding: 2px">{{ form_payee|bootstrap_inline }}</td>
+        <td style="padding: 2px">{{ form.category|bootstrap_inline }}</td>
+        <td style="padding: 2px">{{ form.memo|bootstrap_inline }}</td>
+        <td style="padding: 2px">{{ form.outflow|bootstrap_inline }}</td>
+        <td style="padding: 2px">{{ form.inflow|bootstrap_inline }}</td>
+        <td style="padding: 2px">
+            <div class="form-group">
+                <div class="checkbox">
+                    <input id="id_cleared" name="cleared" type="checkbox">
+                </div>
+            </div>
+        </td>
+        <td></td>
+    </tr>
+    <tr class="warning">
+        <td style="padding: 2px" class="text-right" colspan="{% if account %}9{% else %}10{% endif %}">
+        <div class="btn-group">
+            <input type="submit" class="btn btn-default" value="+ Add {{ what }}"></input>
+            <a href="{% if account %}{% url "budget.views.account" id=account.id %}{% else %}{% url "budget.views.accounts" %}{% endif %}" class="btn btn-default">&times; Cancel</a>
+        </div>
+        </td>
+    </tr>
+</tfoot>

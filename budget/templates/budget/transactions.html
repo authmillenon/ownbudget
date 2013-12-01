@@ -1,0 +1,32 @@
+    <thead>
+        <tr>
+            <th style="padding: 2px"></th>
+            {% if not account %}<th style="padding: 2px">Account</th>{% endif %}
+            <th style="padding: 2px">Date</th>
+            <th style="padding: 2px">Payee</th>
+            <th style="padding: 2px">Category</th>
+            <th style="padding: 2px">Memo</th>
+            <th style="padding: 2px" class="text-right">Outflow</th>
+            <th style="padding: 2px" class="text-right">Inflow</th>
+            <th style="padding: 2px"><abbr title="Cleared">C</abbr></th>
+            <th style="padding: 2px"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for transaction in transactions %}
+            <tr>
+                <td style="padding: 2px">
+                    <input type="checkbox">
+                </td>
+                {% if not account %}<td style="padding: 2px">{{ transaction.account }}</td>{% endif %}
+                <td style="padding: 2px">{{ transaction.date|date:"Y-m-d" }}</td>
+                <td style="padding: 2px">{% if transaction.is_transfer %}{% if transaction.to_account %}{{ transaction.to_account }}{% else %}{{ transaction.as_transfer.to_account }}{% endif %} <span title="Transfer" class="glyphicon glyphicon-transfer text-muted"></span>{% else %}{{ transaction.payee }}{% endif %}</td>
+                <td style="padding: 2px">{{ transaction.category }}</td>
+                <td style="padding: 2px">{{ transaction.memo }}</td>
+                <td style="padding: 2px" class="text-right">{{ transaction.outflow|stringformat:"0.2f"}}</td>
+                <td style="padding: 2px" class="text-right">{{ transaction.inflow|stringformat:"0.2f" }}</td>
+                <td style="padding: 2px"><a class="text-success" href="{% url "budget.views.clear_transaction" id=transaction.id %}?next={{ request.get_full_path }}"><span class="glyphicon glyphicon-{% if transaction.cleared %}check{% else %}unchecked{% endif %}"></span></a></td>
+                <td style="padding: 2px"><a class="text-danger" href="{% url "budget.views.delete_transaction" id=transaction.id %}?next={{ request.get_full_path }}"><span class="glyphicon glyphicon-trash"></span></a></td>
+            </tr>
+        {% endfor %}
+    </tbody>
