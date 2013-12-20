@@ -20,6 +20,15 @@ def ensure_budget_profile(view, *args, **kwargs):
         except models.UserProfile.DoesNotExist:
             request.user.budget_profile = models.UserProfile() 
             request.user.budget_profile.save()
+            i = 0
+            for cg in models.CategoryGroup.objects.filter(default=True).order_by('id'):
+                ucg = models.UserCategoryGroup(category_group=cg, priority=cg.id)
+                request.user.budget_profile.user_category_groups.add(ucg)
+                for c in cg.categories.filter(default=True):
+                    i += 1
+                    uc = models.UserCategory(category=c, group=ucg, priority=i)
+                    request.user.budget_profile.user_categories.add(uc)
+            request.user.budget_profile.save()
         return view(request, *args, **kwargs)
     return check
 
@@ -49,20 +58,51 @@ def budget(request, year=None, month=None):
         month = int(month)
     today = date.today()
     first_month = date(year, month, 1)
-    second_month = date(year, month % 12 + 1, 1)
-    third_month = date(year, (month + 1) % 12 + 1, 1)
-    budget = user.budgets.filter(month__range=(first_month, third_month))
-    if budget.count() < 3:
-        if budget.count() == 0:
-            budget = [models.Budget(month=first_month, user=user)]
-        else:
-            budget = list(budget)
-        if len(budget) < 2:
-            budget.append(models.Budget(month=second_month, user=user))
-        if len(budget) < 3:
-            budget.append(models.Budget(month=third_month, user=user))
+    if month < 11:
+        second_month = date(year, month % 12 + 1, 1)
+        third_month = date(year, (month + 1) % 12 + 1, 1)
+    elif month == 11:
+        second_month = date(year, 12, 1)
+        third_month = date(year+1, 1, 1)
+    else:
+        second_month = date(year+1, 1, 1)
+        third_month = date(year+1, 2, 1)
+    budget = user.budgets.filter(month__range=(first_month, third_month)).order_by('month')
+    user_categories = user.user_categories.order_by('group__priority', 'category__group__name', 'priority')
+
+    if request.method == "POST":
+        formset = forms.BudgetFormSet(request.POST)
+        if formset.is_valid():
+            for form in formset:
+                u = form.cleaned_data['user']
+                del form.cleaned_data['user']
+                b = form.cleaned_data['budget']
+                del form.cleaned_data['budget']
+                if u != user or b.user != user:
+                    return HttpResponseForbidden("<h1>403 Forbidden</h1>")
+                for category_name, amount in form.cleaned_data.items():
+                    try:
+                        bc = b.category_budget.get(budget__user=u, budget=b,
+                                                   category__name=category_name)
+                    except models.CategoryBudget.DoesNotExist:
+                        c = get_object_or_404(models.Category, name=category_name)
+                        bc = models.CategoryBudget(budget=b, category=c)
+                    bc.amount = amount
+                    bc.save()
+    else:
+        if budget.count() < 3:
+            if not budget.filter(month=second_month).exists():
+                models.Budget.objects.create(month=first_month, user=user)
+            if not budget.filter(month=second_month).exists():
+                models.Budget.objects.create(month=second_month, user=user)
+            if not budget.filter(month=third_month).exists():
+                models.Budget.objects.get_or_create(month=third_month, user=user)
+            budget = user.budgets.filter(month__range=(first_month, third_month)).order_by('month')
+
+        formset = forms.BudgetFormSet(initial=[{'user': user, 'budget': b} for b in budget])
     return render(request, 'budget/budget.html', 
-            {'year': year, 'month': month, 'budget': budget, 'today': today})
+            {'year': year, 'month': month, 'budget': budget, 'today': today,
+             'user_categories': user_categories, 'formset': formset})
 
 def get_transactions(user, account=None):
     if account:
@@ -167,7 +207,8 @@ def add_transaction(request, account_id=None):
         Form = forms.TransactionForm
 
     Form.base_fields['category'] = ModelChoiceField(
-            queryset=models.Category.objects.filter(Q(user=user)|Q(default=True)))
+            queryset=models.Category.objects.filter(Q(users__user=user)|Q(default=True)),
+            empty_label="None")
 
     if request.method == "POST":
         if account and unicode(account.id) not in request.POST['account']:
@@ -181,7 +222,6 @@ def add_transaction(request, account_id=None):
                 return HttpResponseRedirect(reverse('budget.views.accounts'))
     else:
         form = Form(initial={'account': account, 'date': date.today()})
-    print account
     return render(request, "budget/add_transaction.html", 
             {'form': form, 'account': account, 'transactions': transactions}) 
      
@@ -202,7 +242,8 @@ def add_transfer(request, account_id=None):
     Form.base_fields['to_account'] = ModelChoiceField(
             queryset=models.Account.objects.filter(user=user).exclude(pk=account_id))
     Form.base_fields['category'] = ModelChoiceField(
-            queryset=models.Category.objects.filter(Q(user=user)|Q(default=True)))
+            queryset=models.Category.objects.filter(Q(users__user=user)|Q(default=True)),
+            empty_label="None")
 
     if request.method == "POST":
         if account and unicode(account.id) not in request.POST['account']:

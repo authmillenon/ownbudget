@@ -5,7 +5,6 @@ import datetime
 
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.core import validators
@@ -46,6 +45,12 @@ class UserProfile(models.Model):
                                 ("en", get_language_info("en")['name_local']), 
                                 ("de", get_language_info("de")['name_local'])),
                                 default="en")
+    # currency = models.ForeignKey(Currency, default="USD", blank=False)
+    # currency_format = models.IntegerField(blank=False, default=0, choices=
+    #                                         ((0, "{currency}{format}"),
+    #                                          (1, "{currency} {format}"),
+    #                                          (2, "{format}{currency}"),
+    #                                          (3, "{format} {currency}")))
 
     def __unicode__(self):
         return self.user.username
@@ -136,29 +141,95 @@ class Account(models.Model):
 
 class CategoryGroup(models.Model):
     name = models.CharField(max_length=32, blank=False, unique=True)
-    user = models.ManyToManyField(UserProfile, related_name="category_groups")
+    users = models.ManyToManyField(UserProfile, related_name="category_groups",
+                                   through='UserCategoryGroup')
     default = models.BooleanField(default=False, blank=False)
     budgeted = models.BooleanField(default=True, editable=False)
 
     def __unicode__(self):
-        return u"{}".format(self.name)
+        return self.name
+
+class UserCategoryGroup(models.Model):
+    user = models.ForeignKey(UserProfile, related_name="user_category_groups")
+    category_group = models.ForeignKey(CategoryGroup, related_name="user_category_groups")
+    priority = models.IntegerField(blank=False, null=False)
+
+    def __unicode__(self):
+        return unicode(self.category_group)
 
 class Category(models.Model):
     group = models.ForeignKey(CategoryGroup, null=False, 
                               related_name="categories")
-    user = models.ManyToManyField(UserProfile, related_name="categories")
+    users = models.ManyToManyField(UserProfile, related_name="categories",
+                                   through="UserCategory")
     name = models.CharField(max_length=32, primary_key=True)
     default = models.BooleanField(default=False, blank=False)
     budgeted = models.BooleanField(default=True, editable=False)
 
     def __unicode__(self):
-        return u"{}: {}".format(self.group, self.name)
+        return self.name
+
+class UserCategory(models.Model):
+    user = models.ForeignKey(UserProfile, related_name="user_categories")
+    group = models.ForeignKey(UserCategoryGroup, related_name="user_categories")
+    category = models.ForeignKey(Category, related_name="user_categories")
+    priority = models.IntegerField(blank=False, null=False)
+
+    def __unicode__(self):
+        return unicode(self.category)
+
+class IncomeCategory(Category):
+    month = models.DateField(validators=[is_first_of_month], blank=False,
+                             default=first_of_this_month, db_index=True)
+
+    def save(self, *args, **kwargs):
+        self.group, _ = CategoryGroup.objects.get_or_create(name="Income")
+        self.name = self.month.strftime("Income for %B %Y")
+        self.default = True
+        self.budgeted = False
+        super(Category, self).save(*args, **kwargs)
+
+class Schedule(models.Model):
+    REPEAT_DAILY    = 0
+    REPEAT_WEEKLY   = 1
+    REPEAT_MONTHLY  = 2
+    REPEAT_YEARLY   = 3
+
+    start_date = models.DateField(auto_now_add=True, blank=False)
+    end_date = models.DateField(auto_now_add=True, blank=True, null=True)
+    repeat = models.IntegerField(blank=False, default=REPEAT_MONTHLY, 
+                                 choices=((REPEAT_DAILY, "daily"), 
+                                        (REPEAT_WEEKLY, "weekly"),
+                                        (REPEAT_MONTHLY, "monthly"),
+                                        (REPEAT_YEARLY, "yearly")))
+    interval = models.IntegerField(blank=False, default=1,
+                                   validators=[validators.MinValueValidator(1)])
+
+    class Meta:
+        unique_together = ('start_date', 'end_date', 'repeat', 'interval')
+
+class WeeklySchedule(Schedule):
+    mondays = models.BooleanField(default=today_is_the_day(0), blank=False)
+    tuesdays = models.BooleanField(default=today_is_the_day(1), blank=False)
+    wednesdays = models.BooleanField(default=today_is_the_day(2), blank=False)
+    thursdays = models.BooleanField(default=today_is_the_day(3), blank=False)
+    fridays = models.BooleanField(default=today_is_the_day(4), blank=False)
+    saturdays = models.BooleanField(default=today_is_the_day(5), blank=False)
+    sundays = models.BooleanField(default=today_is_the_day(6), blank=False)
+
+class MonthlySchedule(Schedule):
+    REPEAT_AT_DOM = False
+    REPEAT_AT_DOW = True
+
+    repeat_on = models.BooleanField(default=REPEAT_AT_DOM, blank=False,
+                                    choices=((False, "day of month"),
+                                             (True, "day of week")))
 
 class Budget(models.Model):
     month = models.DateField(validators=[is_first_of_month], blank=False,
                              default=first_of_this_month)
-    category_amounts = models.ManyToManyField(Category, through="CategoryBudget",
-                                              related_name="budgets")
+    categories = models.ManyToManyField(Category, through="CategoryBudget",
+                                        related_name="budgets")
     user = models.ForeignKey(UserProfile, blank=False, related_name="budgets")
 
     class Meta:
@@ -169,22 +240,124 @@ class Budget(models.Model):
 
     @property
     def amount(self):
-        return self.category_budget_set.aggregate(models.Sum('amount'))
+        return self.category_budget.filter(category__budgeted=True).\
+                aggregate(models.Sum('amount'))['amount__sum'] or 0
+
+    @property
+    def income(self):
+        ic, created = IncomeCategory.objects.get_or_create(month=self.month, budgeted=False)
+        transactions = ic.transactions.filter(account__user=self.user).aggregate(
+                models.Sum('inflow'), models.Sum('outflow'))
+        inflow = transactions['inflow__sum'] or 0
+        outflow = transactions['outflow__sum'] or 0
+        return inflow-outflow
+    
+    def get_last_month_budget(self):
+        if self.month.month == 1:
+            last_month = Budget.objects.get(user=self.user,
+                                            month__month=12,
+                                            month__year=self.month.year - 1)
+        else:
+            last_month = Budget.objects.get(user=self.user,
+                                            month__month=self.month.month - 1,
+                                            month__year=self.month.year)
+        return last_month
+
+    @property
+    def last_available(self):
+        try:
+            return self.get_last_month_budget().available
+        except Budget.DoesNotExist:
+            return 0
+
+    def last_balance(self, category):
+        try:
+            return self.get_last_month_budget().balance(category)
+        except Budget.DoesNotExist:
+            return 0
+
+    @property
+    def last_overspend(self):
+        try:
+            return sum(c.balance for c in self.get_last_month().category_budget.all() \
+                    if c.balance < 0)
+        except Budget.DoesNotExist:
+            return 0
+
+    @property
+    def available(self):
+        return self.last_available + self.last_overspend + self.income - \
+                self.amount
+
+    def outflows(self, category=None):
+        if category == None:
+            return sum(c.outflows for c in self.category_budget.filter(category__budgeted=True))
+        elif not category.budgeted:
+            return 0
+        else:
+            try:
+                return self.category_budget.get(category=category).outflows
+            except CategoryBudget.DoesNotExist:
+                return 0
+
+    def balance(self, category=None):
+        if category == None:
+            return self.amount+self.outflows()+self.last_balance
+        elif not category.budgeted:
+            return 0
+        else:
+            try:
+                last_month = self.last_balance(category)
+                if last_month > 0:
+                    return self.category_budget.get(category=category).balance +\
+                            last_month
+                else:
+                    return self.category_budget.get(category=category).balance
+            except CategoryBudget.DoesNotExist:
+                return 0
 
     def category_group_amount(self, category_group):
-        return self.category_budget_set.filter(category__group=category_group).\
-                aggregate(models.Sum('amount'))
+        return self.category_budget.filter(category__group=category_group).\
+                aggregate(models.Sum('amount'))['amount__sum'] or 0
+
+    def category_group_outflows(self, category_group):
+        return sum(c.outflows for c in \
+                self.category_budget.filter(category__group=category_group))
+
+    def category_group_balance(self, category_group):
+        return self.category_group_amount(category_group) + \
+                self.category_group_outflows(category_group)
 
 class CategoryBudget(models.Model):
-    budget = models.ForeignKey(Budget, blank=False)
-    category = models.ForeignKey(Category, blank=False)
+    budget = models.ForeignKey(Budget, blank=False, related_name="category_budget")
+    category = models.ForeignKey(Category, blank=False, related_name="+")
     amount = money_field(validators=[validators.MinValueValidator(0)]) 
+    prev_month_budget = models.ForeignKey('CategoryBudget', blank=True, null=True,
+                                          default=None, related_name="next_month_budget")
 
     class Meta:
         unique_together = ('category', 'budget')
 
     def __unicode__(self):
         return u"0.02f".format(self.amount)
+
+    @property
+    def outflows(self):
+        transactions = self.category.transactions.filter(
+                account__user=self.budget.user, account__on_budget=True, 
+                date__month=self.budget.month.month,
+                date__year=self.budget.month.year).aggregate(
+                models.Sum('inflow'), models.Sum('outflow'))
+        inflow = transactions['inflow__sum'] or 0
+        outflow = transactions['outflow__sum'] or 0
+        return inflow-outflow
+
+    @property
+    def balance(self):
+        if self.prev_month_budget == None:
+            return self.amount+self.outflows
+        else:
+            return self.amount+self.outflows+self.prev_month_budget.balance
 
 class Transaction(models.Model):
     added = models.DateTimeField(auto_now_add=True)
@@ -216,3 +389,12 @@ class Transfer(Transaction):
 
     def __unicode__(self):
         return u"Transfer : {} <=> {}".format(self.account, self.to_account)
+
+class ScheduledTransaction(Transaction):
+    schedule = models.ForeignKey(Schedule, null=False, related_name="+", 
+                                 on_delete=models.PROTECT)
+    implemented = models.ManyToManyField(Transaction, null=False, 
+                                         related_name="generated_by")
+
+class ScheduledTransfer(Transfer, ScheduledTransaction):
+    pass

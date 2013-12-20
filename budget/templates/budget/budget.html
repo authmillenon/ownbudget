@@ -1,83 +1,150 @@
 {% extends "budget/page.html" %}
 {% load budget_extras %}
+{% load bootstrap %}
 {% block content %}
 {% include "budget/month-nav.html" %}
 <div class="row">
     {% for month_budget in budget %}
     <div class="{%if not forloop.first %}hidden-xs {% endif %}col-sm-3{% if forloop.first %} col-sm-offset-3{% endif %}">
-        <div class="panel {% if month_budget.month.month == today.month and month_budget.month.year and today.year %}panel-info{% else %}panel-default{% endif %}">
+        <div class="panel panel-{% if month_budget.month.month == today.month and month_budget.month.year == today.year %}primary{% else %}{% if month_budget.month < today %}default{% else %}info{% endif %}{% endif %}">
             <div class="panel-heading text-center">{{ month_budget }}</div>
             <table class="table small">
                 {% with prev_month=month_budget.month.month|month_sub:"1" %}
                 <tr>
-                    <th class="text-right" style="padding: 2px">0,00</th>
-                    <td style="padding: 2px">Not Budgeted in {% month_abbr prev_month %}</td>
+                    {% with prev_month_available=month_budget.last_available %}
+                    <th class="text-right" style="padding: 2px">{{ prev_month_available|stringformat:"0.02f" }}</th>
+                    <td style="padding: 2px">{% if prev_month_available < 0 %}Overbudgeted in{% else %}Not budgeted in{% endif %} {% month_abbr prev_month %}</td>
+                    {% endwith %}
                 </tr>
                 <tr>
-                    <th class="text-right" style="padding: 2px">0,00</th>
+                    <th class="text-right" style="padding: 2px">{{ month_budget.last_overspend|stringformat:"0.02f" }}</th>
                     <td style="padding: 2px">Overspend in {% month_abbr prev_month %}</td>
                 </tr>
                 <tr>
-                    <th class="text-right" style="padding: 2px">0,00</th>
+                    <th class="text-right" style="padding: 2px">{{ month_budget.income|stringformat:"0.02f" }}</th>
                     <td style="padding: 2px">Income in {% month_abbr month_budget.month %}</td>
                 </tr>
                 <tr>
-                    <th class="text-right" style="padding: 2px">0,00</th>
+                    <th class="text-right" style="padding: 2px">{{ month_budget.amount|stringformat:"0.02f" }}</th>
                     <td style="padding: 2px">Budgeted in {% month_abbr month_budget.month %}</td>
                 </tr>
                 {% endwith %}
             </table>
             <div class="panel-footer text-center">
-                <h3 class="bold" style="margin: 3px">= 0,00€</h3>
-                <strong>Available to Budget</strong>
+                {% if month_budget.available < 0 %}
+                <h3 class="bold" style="margin: 3px">= <span class="text-danger">{{ month_budget.available|stringformat:"0.02f" }}</span></h3>
+                <strong>Overbudgeted</strong>
+                {% else %}
+                <h3 class="bold" style="margin: 3px">= <span>{{ month_budget.available|stringformat:"0.02f" }}</span></h3>
+                <strong>Available to budget</strong>
+                {% endif %}
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
-<div class="row small">
-    <div class="hidden-xs col-sm-3">
-        <div class="panel panel-default">
-            <table class="table table-stripped table-bordered table-responsive">
-                <tr>
-                    <th style="padding: 2px">
-                        <br>
-                        Categories <a href="#"><span class="glyphicon glyphicon-plus-sign"></span></a>
-                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-up"></a>
-                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-down"></a>
-                    </th>
-                </tr>
-                <tr><td style="padding: 2px">Category 1</td></tr>
-                <tr><td style="padding: 2px">Category 2</td></tr>
-            </table>
+<form method="post" action="">
+    {% csrf_token %}
+    {% if formset.non_field_errors %}
+    <div class="alert alert-danger">
+        <a class="close" data-dismiss="alert">&times;</a>a>
+        {% for errors in formset.non_field_errors %}
+        {{ errors }}
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="row">
+        <div class="col-xs-12 col-sm-3">
+            <div class="form-group">
+            <input type="submit" class="form-control btn btn-primary" value="Save budget">
+            </div>
         </div>
     </div>
-    {% for month_budget in budget %}
-    <div class="{%if not forloop.first %}hidden-xs {% endif %}col-sm-3">
-        <div class="panel {% if month_budget.month.month == today.month and month_budget.month.year and today.year %}panel-info{% else %}panel-default{% endif %}">
-            <table class="table table-stripped table-bordered table-responsive">
-                {% with prev_month=month_budget.month.month|month_sub:"1" %}
-                <tr>
-                    <th class="visible-xs" style="padding: 2px">
-                        <br>
-                        Categories <a href="#"><span class="glyphicon glyphicon-plus-sign"></span></a>
-                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-up"></a>
-                        <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-down"></a>
-                    </th>
-                    <th class="text-right" style="padding: 2px">Budgeted<br>0,00€</th>
-                    <th class="text-right" style="padding: 2px">Outflows<br>0,00€</th>
-                    <th class="text-right" style="padding: 2px">Balance<br>0,00€</th>
-                </tr>
-                <tr>
-                    <td class="visible-xs" style="padding: 2px">Catgories</th>
-                    <td class="text-right" style="padding: 2px">0,00</td>
-                    <td class="text-right" style="padding: 2px">0,00</td>
-                    <td class="text-right" style="padding: 2px">0,00</td>
-                </tr>
-                {% endwith %}
-            </table>
+    <div class="row small">
+        <div class="hidden-xs col-sm-3">
+            <div class="panel panel-{% if month_budget.month.month == today.month and month_budget.month.year == today.year %}primary{% else %}{% if month_budget.month < today %}default{% else %}info{% endif %}{% endif %}">
+                <table class="table table-stripped table-bordered table-responsive">
+                    <tr>
+                        <th style="padding: 2px">
+                            <br>
+                            Categories <a href="#"><span class="glyphicon glyphicon-plus-sign"></span></a>
+                            {#<a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-up"></a>#}
+                            {#<a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-down"></a>#}
+                        </th>
+                    </tr>
+                    {% for user_category in user_categories %}
+                    {% ifchanged user_category.group %}
+                    <tr class="success">
+                        <th style="padding: 2px">
+                            {{ user_category.group }}
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-up"></a>
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-down"></a>
+                        </th>
+                    </tr>
+                    {% endifchanged %}
+                    <tr>
+                        <td style="padding: 2px">
+                            {{ user_category }}
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-up"></a>
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-down"></a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
         </div>
+        {{ formset.management_form }}
+        {% for form in formset %}
+        {% set_month_budget %}
+        {{ form.budget }}
+        {{ form.user }}
+        <div class="{%if not forloop.first %}hidden-xs {% endif %}col-sm-3">
+            <div class="panel panel-{% if month_budget.month.month == today.month and month_budget.month.year == today.year %}primary{% else %}{% if month_budget.month < today %}default{% else %}info{% endif %}{% endif %}">
+                <table class="table table-stripped table-bordered table-responsive">
+                    {% with prev_month=month_budget.month.month|month_sub:"1" %}
+                    <tr>
+                        <th class="visible-xs" style="padding: 2px">
+                            <br>
+                            Categories <a href="#"><span class="glyphicon glyphicon-plus-sign"></span></a>
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-up"></a>
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-collapse-down"></a>
+                        </th>
+                        <th class="text-right" style="padding: 2px">Budgeted<br><span>{{ month_budget.amount|stringformat:"0.02f" }}</span></th>
+                        <th class="text-right" style="padding: 2px">Outflows<br><span>{{ month_budget.outflows|stringformat:"0.02f" }}</span></th>
+                        <th class="text-right" style="padding: 2px">Balance<br><span{% if month_budget.balance < 0 %} class=text-danger{% endif %}>{{ month_budget.balance|stringformat:"0.02f" }}</span></th>
+                    </tr>
+                    {% endwith %}
+                    {% for user_category in user_categories %}
+                    {% ifchanged user_category.group %}
+                    <tr class="success">
+                        <th class="visible-xs" style="padding: 2px">
+                            {{ user_category.group }}
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-up"></a>
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-down"></a>
+                        </th>
+                        <th class="text-right" style="padding: 2px">{% budget_value group_amount %}</th>
+                        <th class="text-right" style="padding: 2px">{% budget_value group_outflows %}</th>
+                        <th class="text-right" style="padding: 2px">{% budget_value group_balance %}</th>
+                    </tr>
+                    {% endifchanged %}
+                    <tr>
+                        <td class="visible-xs" style="padding: 2px">
+                            {{ user_category }}
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-up"></a>
+                            <a href="#" class="pull-right"><span class="glyphicon glyphicon-chevron-down"></a>
+                        </td>
+                        <td class="text-right" style="padding: 2px">
+                            {{ form|category_field:user_category.category.name|bootstrap_inline }}
+                        </td>
+                        <td class="text-right" style="padding: 2px">{% budget_value outflows %}</td>
+                        <td class="text-right" style="padding: 2px">{% budget_value balance %}</td>
+
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
+</form>  
 {% endblock %}

@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'your key'
+SECRET_KEY = '@l(pw42-kgwbh15zr4)m)*&)jfq*$d^+^1jsz!k7&_%l!)qw*9'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -97,6 +97,6 @@ STATIC_URL = '/static/'
 
 AUTH_PROFILE_MODULE = 'budget.models.UserProfile'
 
-ENCRYPTED_FIELDS_KEYDIR = '/path/to/fieldkeys'
+ENCRYPTED_FIELDS_KEYDIR = '.project'
 
 LOGIN_URL = '/ownbudget/login'
